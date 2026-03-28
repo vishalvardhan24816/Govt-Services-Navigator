@@ -1,0 +1,106 @@
+spec_version: 1
+name: govt-services-navigator
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
+
+description: >
+  RL environment simulating Indian government service navigation.
+  Trains AI agents to help citizens complete multi-step bureaucratic processes
+  including PAN-Aadhaar linking, passport application, driving licence
+  acquisition, and vehicle registration. Features realistic failure modes,
+  document mismatches, and multi-phase workflows with 7-dimension adaptive scoring.
+tags:
+  - openenv
+  - government
+  - india
+  - document-processing
+  - multi-step
+  - real-world
+version: "1.0.0"
+author: "Team Mana Mitra"
+
+tasks:
+  - id: pan_aadhaar_link
+    name: PAN-Aadhaar Linking
+    difficulty: easy
+    description: >
+      Link PAN with Aadhaar on the Income Tax portal.
+      Identity documents may contain discrepancies that must be resolved.
+    max_steps: 15
+
+  - id: passport_fresh
+    name: Fresh Passport Application
+    difficulty: medium
+    description: >
+      Apply for a fresh Indian passport through the Passport Seva Kendra.
+      Involves document verification, application, and in-person verification.
+    max_steps: 25
+
+  - id: driving_licence
+    name: Driving Licence (Learner + Permanent)
+    difficulty: hard
+    description: >
+      Obtain a driving licence in India. Two-phase process with
+      age restrictions, medical requirements, and document validity constraints.
+    max_steps: 30
+
+  - id: vehicle_registration
+    name: New Vehicle Registration (RTO)
+    difficulty: expert
+    description: >
+      Register a newly purchased vehicle at the RTO. Involves compliance
+      checks, vehicle inspection, and obtaining permanent registration.
+    max_steps: 35
+
+action_space:
+  type: structured
+  actions:
+    - check_prerequisites
+    - compare_documents
+    - evaluate_options
+    - check_eligibility
+    - check_status
+    - gather_document
+    - fill_form
+    - pay_fee
+    - book_appointment
+    - submit_application
+    - fix_document
+    - take_test
+    - appeal_rejection
+    - wait
+
+observation_space:
+  type: structured
+  fields:
+    - task_id
+    - task_description
+    - difficulty
+    - citizen_summary
+    - citizen_documents
+    - current_phase
+    - services_status
+    - completed_steps
+    - pending_issues
+    - last_action_result
+    - last_action_error
+    - available_actions
+    - status_summary
+    - progress_pct
+    - steps_taken
+    - max_steps
+    - simulated_day
+
+reward:
+  type: multi_dimensional
+  range: [0.0, 0.95]
+  dimensions:
+    - diagnosis
+    - planning
+    - verification
+    - execution
+    - recovery
+    - efficiency
+    - safety
