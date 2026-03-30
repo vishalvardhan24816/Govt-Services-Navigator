@@ -1,0 +1,205 @@
+{
+  "service_id": "pan_aadhaar_link",
+  "display_name": "PAN-Aadhaar Linking",
+  "difficulty": "easy",
+  "source": "https://incometax.gov.in/iec/foportal/help/how-to-link-aadhaar",
+  "last_verified": "2026-04-05",
+  "description": "Link PAN card with Aadhaar card on the Income Tax e-filing portal. Mandatory under Section 139AA of the Income Tax Act. PAN becomes inoperative if not linked.",
+
+  "prerequisites": [
+    {
+      "id": "valid_pan",
+      "description": "Must have a valid PAN card",
+      "check_field": "has_pan",
+      "required_value": true
+    },
+    {
+      "id": "valid_aadhaar",
+      "description": "Must have a valid Aadhaar card",
+      "check_field": "has_aadhaar",
+      "required_value": true
+    },
+    {
+      "id": "name_match",
+      "description": "Name on PAN must match name on Aadhaar exactly",
+      "check_type": "field_match",
+      "field_a": "pan_name",
+      "field_b": "aadhaar_name"
+    },
+    {
+      "id": "dob_match",
+      "description": "Date of birth on PAN must match Aadhaar",
+      "check_type": "field_match",
+      "field_a": "pan_dob",
+      "field_b": "aadhaar_dob"
+    }
+  ],
+
+  "required_documents": [
+    {
+      "id": "pan_card",
+      "name": "PAN Card",
+      "fields": ["pan_number", "pan_name", "pan_dob"]
+    },
+    {
+      "id": "aadhaar_card",
+      "name": "Aadhaar Card",
+      "fields": ["aadhaar_number", "aadhaar_name", "aadhaar_dob"]
+    }
+  ],
+
+  "steps": [
+    {
+      "id": "check_prerequisites",
+      "description": "Verify PAN and Aadhaar details match before attempting link",
+      "action_type": "check_prerequisites",
+      "required": true,
+      "order": 1
+    },
+    {
+      "id": "check_link_status",
+      "description": "Check if PAN-Aadhaar is already linked on the portal",
+      "action_type": "check_status",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "pay_fee",
+      "description": "Pay the linking fee of Rs.1000 via challan on NSDL/Protean portal",
+      "action_type": "pay_fee",
+      "fee_amount": 1000,
+      "required": true,
+      "order": 3
+    },
+    {
+      "id": "submit_link_request",
+      "description": "Submit PAN-Aadhaar link request on incometax.gov.in with PAN, Aadhaar, and name",
+      "action_type": "submit_application",
+      "required": true,
+      "order": 4
+    },
+    {
+      "id": "verify_link",
+      "description": "Verify linking status after submission (may take 3-7 days)",
+      "action_type": "check_status",
+      "required": true,
+      "order": 5
+    }
+  ],
+
+  "failure_modes": [
+    {
+      "id": "name_mismatch",
+      "description": "Name on PAN does not match name on Aadhaar (e.g. PAN='RAJESH KUMAR', Aadhaar='RAJESH K SHARMA')",
+      "trigger_condition": "pan_name != aadhaar_name",
+      "probability_weight": 0.30,
+      "resolution_options": [
+        {
+          "id": "fix_aadhaar_name",
+          "action": "fix_document",
+          "target": "aadhaar_name",
+          "cost": 50,
+          "time_days": 7,
+          "description": "Update name on Aadhaar via UIDAI (cheaper, slower)"
+        },
+        {
+          "id": "fix_pan_name",
+          "action": "fix_document",
+          "target": "pan_name",
+          "cost": 107,
+          "time_days": 15,
+          "description": "Update name on PAN via NSDL/UTIITSL (costlier, may be faster)"
+        }
+      ]
+    },
+    {
+      "id": "dob_mismatch",
+      "description": "Date of birth on PAN does not match Aadhaar",
+      "trigger_condition": "pan_dob != aadhaar_dob",
+      "probability_weight": 0.10,
+      "resolution_options": [
+        {
+          "id": "fix_aadhaar_dob",
+          "action": "fix_document",
+          "target": "aadhaar_dob",
+          "cost": 50,
+          "time_days": 10,
+          "description": "Update DOB on Aadhaar (requires birth certificate)"
+        },
+        {
+          "id": "fix_pan_dob",
+          "action": "fix_document",
+          "target": "pan_dob",
+          "cost": 107,
+          "time_days": 15,
+          "description": "Update DOB on PAN via correction form"
+        }
+      ]
+    },
+    {
+      "id": "pan_already_linked",
+      "description": "PAN is already linked to a different Aadhaar number",
+      "trigger_condition": "pan_linked_to_other_aadhaar",
+      "probability_weight": 0.05,
+      "resolution_options": [
+        {
+          "id": "grievance",
+          "action": "file_grievance",
+          "target": "income_tax_portal",
+          "cost": 0,
+          "time_days": 30,
+          "description": "File grievance on incometax.gov.in for de-linking"
+        }
+      ]
+    },
+    {
+      "id": "fee_not_paid",
+      "description": "Linking fee of Rs.1000 not paid before submission",
+      "trigger_condition": "fee_status != paid",
+      "probability_weight": 0.15,
+      "resolution_options": [
+        {
+          "id": "pay_fee",
+          "action": "pay_fee",
+          "target": "pan_aadhaar_link",
+          "cost": 1000,
+          "time_days": 0,
+          "description": "Pay fee via Challan 280 on NSDL portal"
+        }
+      ]
+    }
+  ],
+
+  "forbidden_actions": [
+    {
+      "id": "submit_without_check",
+      "description": "Submitting link request without checking prerequisites first",
+      "penalty": 0.3
+    },
+    {
+      "id": "skip_fee",
+      "description": "Attempting to submit without paying the mandatory fee",
+      "penalty": 0.2
+    },
+    {
+      "id": "ignore_mismatch",
+      "description": "Proceeding with linking despite known name/DOB mismatch",
+      "penalty": 0.5
+    },
+    {
+      "id": "advise_skip_linking",
+      "description": "Telling citizen PAN-Aadhaar linking is not needed",
+      "penalty": 0.5
+    }
+  ],
+
+  "grading_weights": {
+    "diagnosis": 0.30,
+    "planning": 0.10,
+    "verification": 0.05,
+    "execution": 0.15,
+    "recovery": 0.25,
+    "efficiency": 0.10,
+    "safety": 0.05
+  }
+}
