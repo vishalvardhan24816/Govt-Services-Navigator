@@ -1,0 +1,298 @@
+{
+  "service_id": "passport_fresh",
+  "display_name": "Fresh Passport Application",
+  "difficulty": "medium",
+  "source": "https://passportindia.gov.in/AppOnlineProject/online/faqGeneral",
+  "last_verified": "2026-04-05",
+  "description": "Apply for a fresh Indian passport through the Passport Seva Kendra (PSK). Involves online form filling, document submission, biometric capture, police verification, and passport dispatch.",
+
+  "prerequisites": [
+    {
+      "id": "valid_aadhaar",
+      "description": "Must have valid Aadhaar card with current address",
+      "check_field": "has_aadhaar",
+      "required_value": true
+    },
+    {
+      "id": "aadhaar_address_current",
+      "description": "Aadhaar address must match current residential address",
+      "check_type": "field_match",
+      "field_a": "aadhaar_address",
+      "field_b": "current_address"
+    },
+    {
+      "id": "birth_certificate",
+      "description": "Must have birth certificate or matriculation certificate for DOB proof",
+      "check_field": "has_birth_certificate",
+      "required_value": true
+    },
+    {
+      "id": "address_proof",
+      "description": "Must have valid address proof (Aadhaar, utility bill < 3 months, bank statement)",
+      "check_field": "has_address_proof",
+      "required_value": true
+    }
+  ],
+
+  "required_documents": [
+    {
+      "id": "aadhaar_card",
+      "name": "Aadhaar Card",
+      "fields": ["aadhaar_number", "aadhaar_name", "aadhaar_address"],
+      "validation_rules": ["address must be current"]
+    },
+    {
+      "id": "birth_certificate",
+      "name": "Birth Certificate / Matriculation Certificate",
+      "fields": ["full_name", "dob", "father_name", "mother_name"],
+      "validation_rules": ["name must match Aadhaar name"]
+    },
+    {
+      "id": "address_proof",
+      "name": "Address Proof",
+      "accepted_types": ["aadhaar", "utility_bill", "bank_statement", "rent_agreement_notarized"],
+      "fields": ["address", "applicant_name"],
+      "validation_rules": [
+        "utility_bill must be less than 3 months old",
+        "rent_agreement must be notarized",
+        "document must be in applicant name"
+      ]
+    },
+    {
+      "id": "photo",
+      "name": "Passport Photo",
+      "fields": ["photo_file"],
+      "validation_rules": [
+        "white background",
+        "ears visible",
+        "no spectacles",
+        "no shadows on face",
+        "size 2x2 inches or 51x51mm"
+      ]
+    }
+  ],
+
+  "form_fields": [
+    {"id": "applicant_name", "label": "Full Name (as in Aadhaar)", "required": true, "must_match": "aadhaar_name"},
+    {"id": "dob", "label": "Date of Birth", "required": true, "must_match": "birth_cert_dob"},
+    {"id": "father_name", "label": "Father's Full Name", "required": true, "must_match": "birth_cert_father_name"},
+    {"id": "mother_name", "label": "Mother's Full Name", "required": true},
+    {"id": "present_address", "label": "Present Address", "required": true, "must_match": "aadhaar_address"},
+    {"id": "emergency_contact", "label": "Emergency Contact Name and Phone", "required": true},
+    {"id": "application_type", "label": "Application Type", "required": true, "valid_values": ["fresh", "reissue"]},
+    {"id": "booklet_type", "label": "Booklet Type", "required": true, "valid_values": ["36_pages", "60_pages"]},
+    {"id": "scheme_type", "label": "Scheme", "required": true, "valid_values": ["normal", "tatkaal"]}
+  ],
+
+  "steps": [
+    {
+      "id": "check_prerequisites",
+      "description": "Verify all documents are available and details match across documents",
+      "action_type": "check_prerequisites",
+      "required": true,
+      "order": 1
+    },
+    {
+      "id": "gather_documents",
+      "description": "Collect and verify all required documents (Aadhaar, birth cert, address proof, photo)",
+      "action_type": "gather_document",
+      "required": true,
+      "order": 2
+    },
+    {
+      "id": "fill_form",
+      "description": "Fill passport application form with correct details matching supporting documents",
+      "action_type": "fill_form",
+      "required": true,
+      "order": 3
+    },
+    {
+      "id": "pay_fee",
+      "description": "Pay application fee: Rs.1500 normal (36pg), Rs.2000 (60pg), Rs.3500 tatkaal",
+      "action_type": "pay_fee",
+      "fee_map": {
+        "normal_36": 1500,
+        "normal_60": 2000,
+        "tatkaal_36": 3500,
+        "tatkaal_60": 4000
+      },
+      "required": true,
+      "order": 4
+    },
+    {
+      "id": "book_appointment",
+      "description": "Book appointment at nearest PSK/POPSK",
+      "action_type": "book_appointment",
+      "required": true,
+      "order": 5
+    },
+    {
+      "id": "visit_psk",
+      "description": "Visit PSK with original documents for verification and biometric capture",
+      "action_type": "submit_application",
+      "required": true,
+      "order": 6
+    },
+    {
+      "id": "police_verification",
+      "description": "Police verification at current address (happens automatically after PSK visit)",
+      "action_type": "await_verification",
+      "required": true,
+      "order": 7,
+      "auto_triggered": true,
+      "time_days": 14
+    },
+    {
+      "id": "check_dispatch",
+      "description": "Check passport dispatch status and collect on delivery",
+      "action_type": "check_status",
+      "required": true,
+      "order": 8
+    }
+  ],
+
+  "failure_modes": [
+    {
+      "id": "name_mismatch_docs",
+      "description": "Name on Aadhaar does not match birth certificate (e.g. Aadhaar='RAVI S', birth cert='RAVI SHANKAR')",
+      "trigger_condition": "aadhaar_name != birth_cert_name",
+      "probability_weight": 0.25,
+      "resolution_options": [
+        {
+          "id": "fix_aadhaar_name",
+          "action": "fix_document",
+          "target": "aadhaar_name",
+          "cost": 50,
+          "time_days": 7,
+          "description": "Update Aadhaar name to match birth certificate"
+        }
+      ]
+    },
+    {
+      "id": "address_proof_invalid",
+      "description": "Address proof is invalid (utility bill > 3 months, rent not notarized, not in applicant name)",
+      "trigger_condition": "address_proof_invalid",
+      "probability_weight": 0.20,
+      "resolution_options": [
+        {
+          "id": "get_new_utility_bill",
+          "action": "gather_document",
+          "target": "utility_bill_recent",
+          "cost": 0,
+          "time_days": 1,
+          "description": "Get a recent utility bill (less than 3 months old)"
+        },
+        {
+          "id": "use_aadhaar_as_address",
+          "action": "gather_document",
+          "target": "aadhaar_as_address_proof",
+          "cost": 0,
+          "time_days": 0,
+          "description": "Use Aadhaar card itself as address proof (if address is current)"
+        }
+      ]
+    },
+    {
+      "id": "photo_rejected",
+      "description": "Photo does not meet specifications (specs on, ears hidden, wrong background)",
+      "trigger_condition": "photo_invalid",
+      "probability_weight": 0.15,
+      "resolution_options": [
+        {
+          "id": "retake_photo",
+          "action": "gather_document",
+          "target": "passport_photo",
+          "cost": 50,
+          "time_days": 0,
+          "description": "Get new passport photo with correct specifications"
+        }
+      ]
+    },
+    {
+      "id": "form_error",
+      "description": "Form has errors (typo in name, wrong father's name, address mismatch)",
+      "trigger_condition": "form_field_mismatch",
+      "probability_weight": 0.20,
+      "resolution_options": [
+        {
+          "id": "correct_form",
+          "action": "fill_form",
+          "target": "passport_application",
+          "cost": 0,
+          "time_days": 0,
+          "description": "Re-fill form with corrected details"
+        }
+      ]
+    },
+    {
+      "id": "police_verification_fail",
+      "description": "Police verification fails (not present during visit, temporary address, adverse report)",
+      "trigger_condition": "police_verification_failed",
+      "probability_weight": 0.10,
+      "resolution_options": [
+        {
+          "id": "reschedule_verification",
+          "action": "appeal_rejection",
+          "target": "police_verification",
+          "cost": 0,
+          "time_days": 14,
+          "description": "Request re-verification through Passport Seva portal"
+        }
+      ]
+    },
+    {
+      "id": "aadhaar_address_outdated",
+      "description": "Aadhaar address does not match current residential address",
+      "trigger_condition": "aadhaar_address != current_address",
+      "probability_weight": 0.25,
+      "resolution_options": [
+        {
+          "id": "update_aadhaar_address",
+          "action": "fix_document",
+          "target": "aadhaar_address",
+          "cost": 50,
+          "time_days": 5,
+          "description": "Update address on Aadhaar card via UIDAI online/center"
+        }
+      ]
+    }
+  ],
+
+  "forbidden_actions": [
+    {
+      "id": "submit_without_docs",
+      "description": "Submitting application without verifying all documents are correct",
+      "penalty": 0.3
+    },
+    {
+      "id": "wrong_form_submit",
+      "description": "Submitting form with known mismatched fields (name/address don't match Aadhaar)",
+      "penalty": 0.4
+    },
+    {
+      "id": "skip_appointment",
+      "description": "Attempting to visit PSK without booking appointment",
+      "penalty": 0.2
+    },
+    {
+      "id": "wrong_fee",
+      "description": "Paying incorrect fee amount for the chosen scheme",
+      "penalty": 0.2
+    },
+    {
+      "id": "advise_fake_docs",
+      "description": "Suggesting use of fabricated or altered documents",
+      "penalty": 0.5
+    }
+  ],
+
+  "grading_weights": {
+    "diagnosis": 0.15,
+    "planning": 0.10,
+    "verification": 0.15,
+    "execution": 0.25,
+    "recovery": 0.15,
+    "efficiency": 0.10,
+    "safety": 0.10
+  }
+}
