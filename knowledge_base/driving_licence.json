@@ -1,0 +1,352 @@
+{
+  "service_id": "driving_licence",
+  "display_name": "Driving Licence (Learner's + Permanent)",
+  "difficulty": "hard",
+  "source": "https://parivahan.gov.in/parivahan/",
+  "last_verified": "2026-04-05",
+  "description": "Obtain a driving licence in India. Two-phase process: first apply for Learner's Licence (LL) with written test, wait mandatory 30 days, then apply for permanent Driving Licence (DL) with practical road test. LL valid for 6 months — DL must be applied within this window.",
+
+  "prerequisites": [
+    {
+      "id": "age_eligible",
+      "description": "Must be 18+ for geared vehicles / 16+ for gearless two-wheeler (with guardian consent)",
+      "check_type": "age_check",
+      "min_age_geared": 18,
+      "min_age_gearless": 16
+    },
+    {
+      "id": "valid_aadhaar",
+      "description": "Must have valid Aadhaar card",
+      "check_field": "has_aadhaar",
+      "required_value": true
+    },
+    {
+      "id": "address_proof",
+      "description": "Must have address proof matching current address",
+      "check_field": "has_address_proof",
+      "required_value": true
+    },
+    {
+      "id": "medical_certificate",
+      "description": "Medical certificate from registered practitioner (Form 1A for age 40+)",
+      "check_type": "conditional",
+      "condition": "age >= 40",
+      "check_field": "has_medical_certificate",
+      "required_value": true
+    }
+  ],
+
+  "required_documents": [
+    {
+      "id": "aadhaar_card",
+      "name": "Aadhaar Card",
+      "fields": ["aadhaar_number", "aadhaar_name", "aadhaar_address", "aadhaar_dob"]
+    },
+    {
+      "id": "age_proof",
+      "name": "Age Proof (Birth Certificate / 10th Marksheet / Aadhaar)",
+      "fields": ["dob"]
+    },
+    {
+      "id": "address_proof",
+      "name": "Address Proof",
+      "accepted_types": ["aadhaar", "passport", "utility_bill", "bank_statement"]
+    },
+    {
+      "id": "passport_photos",
+      "name": "Passport Size Photos",
+      "fields": ["photo_file"],
+      "count": 4
+    },
+    {
+      "id": "medical_certificate",
+      "name": "Medical Certificate (Form 1A)",
+      "fields": ["doctor_name", "registration_number", "fitness_declaration"],
+      "required_if": "age >= 40"
+    },
+    {
+      "id": "guardian_consent",
+      "name": "Guardian Consent Form",
+      "fields": ["guardian_name", "guardian_signature", "relationship"],
+      "required_if": "age < 18"
+    }
+  ],
+
+  "phases": [
+    {
+      "phase_id": "learner_licence",
+      "display_name": "Phase 1: Learner's Licence",
+      "steps": [
+        {
+          "id": "check_prerequisites_ll",
+          "description": "Verify age eligibility, documents, and vehicle class selection",
+          "action_type": "check_prerequisites",
+          "required": true,
+          "order": 1
+        },
+        {
+          "id": "gather_documents_ll",
+          "description": "Collect Aadhaar, age proof, address proof, photos, medical cert if needed",
+          "action_type": "gather_document",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "fill_form_ll",
+          "description": "Fill Form 2 (LL application) on Parivahan portal with correct details",
+          "action_type": "fill_form",
+          "form_id": "form_2",
+          "required": true,
+          "order": 3
+        },
+        {
+          "id": "pay_fee_ll",
+          "description": "Pay LL application fee",
+          "action_type": "pay_fee",
+          "fee_amount": 200,
+          "required": true,
+          "order": 4
+        },
+        {
+          "id": "book_slot_ll",
+          "description": "Book slot at RTO for LL written test",
+          "action_type": "book_appointment",
+          "required": true,
+          "order": 5
+        },
+        {
+          "id": "take_written_test",
+          "description": "Appear for written test at RTO (traffic signs, rules, road safety)",
+          "action_type": "take_test",
+          "test_type": "written",
+          "pass_score": 9,
+          "total_questions": 15,
+          "required": true,
+          "order": 6
+        },
+        {
+          "id": "receive_ll",
+          "description": "Receive Learner's Licence (valid for 6 months)",
+          "action_type": "check_status",
+          "required": true,
+          "order": 7,
+          "ll_validity_days": 180
+        }
+      ]
+    },
+    {
+      "phase_id": "driving_licence",
+      "display_name": "Phase 2: Permanent Driving Licence",
+      "prerequisite_phase": "learner_licence",
+      "min_wait_days": 30,
+      "max_wait_days": 180,
+      "steps": [
+        {
+          "id": "check_ll_validity",
+          "description": "Verify LL is at least 30 days old and not expired (within 6 months)",
+          "action_type": "check_prerequisites",
+          "required": true,
+          "order": 1
+        },
+        {
+          "id": "fill_form_dl",
+          "description": "Fill Form 4 (DL application) on Parivahan portal",
+          "action_type": "fill_form",
+          "form_id": "form_4",
+          "required": true,
+          "order": 2
+        },
+        {
+          "id": "pay_fee_dl",
+          "description": "Pay DL application fee",
+          "action_type": "pay_fee",
+          "fee_amount": 300,
+          "required": true,
+          "order": 3
+        },
+        {
+          "id": "book_slot_dl",
+          "description": "Book slot at RTO for practical driving test",
+          "action_type": "book_appointment",
+          "required": true,
+          "order": 4
+        },
+        {
+          "id": "take_driving_test",
+          "description": "Appear for practical driving test at RTO (H-track, road test)",
+          "action_type": "take_test",
+          "test_type": "practical",
+          "required": true,
+          "order": 5
+        },
+        {
+          "id": "receive_dl",
+          "description": "Receive smart-card Driving Licence (dispatched to address)",
+          "action_type": "check_status",
+          "required": true,
+          "order": 6
+        }
+      ]
+    }
+  ],
+
+  "failure_modes": [
+    {
+      "id": "underage",
+      "description": "Applicant is below minimum age for selected vehicle class",
+      "trigger_condition": "age < min_age_for_class",
+      "probability_weight": 0.10,
+      "resolution_options": [
+        {
+          "id": "switch_vehicle_class",
+          "action": "update_application",
+          "target": "vehicle_class",
+          "cost": 0,
+          "time_days": 0,
+          "description": "Switch to gearless two-wheeler if age 16-17"
+        },
+        {
+          "id": "wait_for_age",
+          "action": "wait",
+          "target": "age_eligibility",
+          "cost": 0,
+          "description": "Wait until applicant reaches minimum age"
+        }
+      ]
+    },
+    {
+      "id": "written_test_fail",
+      "description": "Failed the written test (scored below 9/15)",
+      "trigger_condition": "written_test_score < 9",
+      "probability_weight": 0.20,
+      "resolution_options": [
+        {
+          "id": "retake_written",
+          "action": "book_appointment",
+          "target": "written_test_retake",
+          "cost": 50,
+          "time_days": 7,
+          "description": "Book retake after 7-day waiting period"
+        }
+      ]
+    },
+    {
+      "id": "driving_test_fail",
+      "description": "Failed the practical driving test",
+      "trigger_condition": "driving_test_failed",
+      "probability_weight": 0.25,
+      "resolution_options": [
+        {
+          "id": "retake_driving",
+          "action": "book_appointment",
+          "target": "driving_test_retake",
+          "cost": 300,
+          "time_days": 7,
+          "description": "Book retake after 7-day waiting period. Must still be within LL validity."
+        }
+      ]
+    },
+    {
+      "id": "ll_expired",
+      "description": "Learner's Licence expired (6 months passed without applying for DL)",
+      "trigger_condition": "ll_age_days > 180",
+      "probability_weight": 0.10,
+      "resolution_options": [
+        {
+          "id": "reapply_ll",
+          "action": "submit_application",
+          "target": "learner_licence",
+          "cost": 200,
+          "time_days": 14,
+          "description": "Must re-apply for LL from scratch and retake written test"
+        }
+      ]
+    },
+    {
+      "id": "dl_applied_too_early",
+      "description": "Applied for DL before 30-day mandatory practice period after LL",
+      "trigger_condition": "ll_age_days < 30",
+      "probability_weight": 0.15,
+      "resolution_options": [
+        {
+          "id": "wait_30_days",
+          "action": "wait",
+          "target": "practice_period",
+          "cost": 0,
+          "time_days_remaining": "30 - ll_age_days",
+          "description": "Wait until 30 days have passed since LL issuance"
+        }
+      ]
+    },
+    {
+      "id": "medical_cert_missing",
+      "description": "Applicant is 40+ but did not provide medical certificate (Form 1A)",
+      "trigger_condition": "age >= 40 and !has_medical_certificate",
+      "probability_weight": 0.10,
+      "resolution_options": [
+        {
+          "id": "get_medical_cert",
+          "action": "gather_document",
+          "target": "medical_certificate",
+          "cost": 200,
+          "time_days": 1,
+          "description": "Visit registered medical practitioner for Form 1A"
+        }
+      ]
+    },
+    {
+      "id": "address_mismatch",
+      "description": "Address on documents doesn't match — Aadhaar has old address",
+      "trigger_condition": "aadhaar_address != current_address",
+      "probability_weight": 0.15,
+      "resolution_options": [
+        {
+          "id": "update_aadhaar",
+          "action": "fix_document",
+          "target": "aadhaar_address",
+          "cost": 50,
+          "time_days": 5,
+          "description": "Update Aadhaar address before applying"
+        }
+      ]
+    }
+  ],
+
+  "forbidden_actions": [
+    {
+      "id": "apply_dl_without_ll",
+      "description": "Applying for DL without having a valid LL",
+      "penalty": 0.5
+    },
+    {
+      "id": "apply_dl_before_30_days",
+      "description": "Applying for DL before mandatory 30-day practice period",
+      "penalty": 0.3
+    },
+    {
+      "id": "skip_written_test",
+      "description": "Attempting to get LL without taking the written test",
+      "penalty": 0.4
+    },
+    {
+      "id": "wrong_vehicle_class_underage",
+      "description": "Applying for geared vehicle licence when under 18",
+      "penalty": 0.4
+    },
+    {
+      "id": "submit_without_medical_40plus",
+      "description": "Submitting application without medical cert when age 40+",
+      "penalty": 0.3
+    }
+  ],
+
+  "grading_weights": {
+    "diagnosis": 0.15,
+    "planning": 0.20,
+    "verification": 0.10,
+    "execution": 0.15,
+    "recovery": 0.15,
+    "efficiency": 0.15,
+    "safety": 0.10
+  }
+}
