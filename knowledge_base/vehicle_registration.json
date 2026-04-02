@@ -1,0 +1,190 @@
+{
+  "task_id": "vehicle_registration",
+  "task_name": "New Vehicle Registration (RTO)",
+  "difficulty": "expert",
+  "description": "Register a newly purchased vehicle at the Regional Transport Office (RTO). Handle insurance verification, road tax payment, Form 20 submission, vehicle inspection, and temporary-to-permanent registration conversion.",
+  "official_portal": "https://parivahan.gov.in/",
+  "max_steps": 35,
+
+  "phases": [
+    {
+      "id": "pre_registration",
+      "name": "Pre-Registration Verification",
+      "description": "Verify insurance, gather documents, check vehicle eligibility",
+      "steps": [
+        "Verify valid vehicle insurance policy",
+        "Obtain pollution-under-control (PUC) certificate",
+        "Collect dealer invoice and Form 21 (sale certificate)",
+        "Collect Form 22 (roadworthiness certificate from manufacturer)",
+        "Verify address proof matches across documents"
+      ]
+    },
+    {
+      "id": "application",
+      "name": "Application Submission",
+      "description": "Fill Form 20, calculate and pay road tax + registration fee, book RTO appointment",
+      "steps": [
+        "Fill Form 20 (application for registration)",
+        "Calculate road tax based on vehicle type and engine capacity",
+        "Pay road tax + registration fee",
+        "Book RTO inspection appointment",
+        "Submit application with all documents at RTO"
+      ]
+    },
+    {
+      "id": "inspection",
+      "name": "Vehicle Inspection",
+      "description": "Present vehicle at RTO for physical inspection",
+      "steps": [
+        "Present vehicle at RTO on appointment date",
+        "RTO inspector verifies chassis number, engine number",
+        "Inspector checks vehicle against Form 22 specifications",
+        "Temporary registration issued if inspection passes"
+      ]
+    },
+    {
+      "id": "permanent_registration",
+      "name": "Permanent Registration",
+      "description": "Wait for permanent registration number and collect RC",
+      "steps": [
+        "Wait for permanent registration number assignment",
+        "Collect Registration Certificate (RC)",
+        "Verify RC details are correct",
+        "Affix permanent number plates"
+      ]
+    }
+  ],
+
+  "prerequisites": {
+    "valid_insurance": {
+      "description": "Vehicle must have valid comprehensive insurance from date of purchase",
+      "validity_period_days": 365,
+      "required": true
+    },
+    "puc_certificate": {
+      "description": "Pollution Under Control certificate (for BS-VI vehicles, valid from manufacture date)",
+      "validity_period_days": 180,
+      "required": true
+    },
+    "dealer_invoice": {
+      "description": "Original tax invoice from authorized dealer with GST details",
+      "required": true
+    },
+    "form_21": {
+      "description": "Sale certificate issued by dealer (proof of sale)",
+      "required": true
+    },
+    "form_22": {
+      "description": "Roadworthiness certificate from manufacturer",
+      "required": true
+    },
+    "address_proof": {
+      "description": "Aadhaar card / passport / utility bill as address proof",
+      "required": true
+    },
+    "identity_proof": {
+      "description": "Aadhaar card / PAN card / voter ID",
+      "required": true
+    },
+    "passport_photos": {
+      "description": "Two passport-size photographs",
+      "required": true
+    }
+  },
+
+  "vehicle_types": {
+    "two_wheeler": {
+      "road_tax_pct": 8,
+      "registration_fee": 300,
+      "description": "Motorcycle or scooter"
+    },
+    "four_wheeler_petrol": {
+      "road_tax_pct": 10,
+      "registration_fee": 600,
+      "description": "Petrol car"
+    },
+    "four_wheeler_diesel": {
+      "road_tax_pct": 12,
+      "registration_fee": 600,
+      "description": "Diesel car (higher tax due to emissions)"
+    },
+    "four_wheeler_ev": {
+      "road_tax_pct": 0,
+      "registration_fee": 600,
+      "description": "Electric vehicle (road tax exemption in most states)"
+    }
+  },
+
+  "fee_structure": {
+    "temporary_registration": 200,
+    "number_plate_fee": 500,
+    "smart_card_rc_fee": 200,
+    "hypothecation_fee": 1500,
+    "notes": "Road tax = (road_tax_pct / 100) * ex_showroom_price. Registration fee is flat per vehicle type."
+  },
+
+  "complications": {
+    "insurance_expired": {
+      "probability": 0.25,
+      "description": "Insurance policy expired or not yet activated",
+      "resolution": "Get new insurance or activate existing policy",
+      "blocks_phase": "application"
+    },
+    "address_mismatch": {
+      "probability": 0.20,
+      "description": "Address on Aadhaar doesn't match address on other documents",
+      "resolution": "Update Aadhaar address or provide additional address proof",
+      "blocks_phase": "application"
+    },
+    "invoice_discrepancy": {
+      "probability": 0.15,
+      "description": "Dealer invoice amount doesn't match ex-showroom price (affects road tax calculation)",
+      "resolution": "Get corrected invoice from dealer",
+      "blocks_phase": "application"
+    },
+    "missing_puc": {
+      "probability": 0.15,
+      "description": "PUC certificate not obtained from dealer",
+      "resolution": "Get PUC from authorized testing center",
+      "blocks_phase": "inspection"
+    },
+    "hypothecation_required": {
+      "probability": 0.20,
+      "description": "Vehicle purchased on loan — requires hypothecation endorsement with bank NOC",
+      "resolution": "Obtain Form 34 and bank NOC for hypothecation",
+      "blocks_phase": "application"
+    },
+    "inspection_failure": {
+      "probability": 0.10,
+      "description": "Vehicle fails RTO inspection (chassis/engine mismatch)",
+      "resolution": "Get dealer to correct Form 22 or resolve chassis number discrepancy",
+      "blocks_phase": "permanent_registration"
+    }
+  },
+
+  "forbidden_actions": [
+    "Submitting application without valid insurance",
+    "Paying road tax without correct invoice amount",
+    "Skipping vehicle inspection",
+    "Applying for permanent registration without temporary registration",
+    "Submitting without Form 20, 21, and 22"
+  ],
+
+  "grading_weights": {
+    "diagnosis": 0.15,
+    "planning": 0.15,
+    "verification": 0.15,
+    "execution": 0.20,
+    "recovery": 0.15,
+    "efficiency": 0.10,
+    "safety": 0.10
+  },
+
+  "timing": {
+    "temporary_registration_validity_days": 30,
+    "permanent_registration_wait_days": 7,
+    "inspection_appointment_lead_days": 3,
+    "max_days_after_purchase": 7,
+    "notes": "Vehicle must be registered within 7 days of purchase. Temporary registration valid for 30 days."
+  }
+}
