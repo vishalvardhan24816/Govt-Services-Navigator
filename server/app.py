@@ -52,6 +52,12 @@ class ActionRequest(BaseModel):
 # STANDARD OPENENV ENDPOINTS (for openenv validate)
 # ──────────────────────────────────────────────────────────────────────
 
+@app.get("/")
+def root():
+    """Root endpoint — returns 200 for automated pings."""
+    return {"status": "healthy", "environment": "govt-services-navigator"}
+
+
 @app.get("/health")
 def health():
     """Health check — returns {"status": "healthy"} per OpenEnv spec."""
