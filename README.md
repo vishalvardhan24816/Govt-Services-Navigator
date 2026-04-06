@@ -1,3 +1,17 @@
+---
+title: Government Services Navigator
+emoji: 🏛️
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+tags:
+  - openenv
+  - reinforcement-learning
+  - government
+  - india
+---
+
 # Government Services Navigator — OpenEnv RL Environment
 
 An RL environment that simulates Indian government service navigation. Trains AI agents to help citizens complete multi-step bureaucratic processes including PAN-Aadhaar linking, passport application, driving licence acquisition, and vehicle registration.
