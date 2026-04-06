@@ -13,6 +13,5 @@ build/
 *.log
 .env
 .DS_Store
-uv.lock
 scripts/_run_now.py
 run_eval.py
