@@ -1,10 +1,34 @@
-"""
-Inference Script — Government Services Navigator
+"""Inference Script — Government Services Navigator
 ===================================
-MANDATORY FORMAT:
-  [START] task=<task_name> env=<benchmark> model=<model_name>
-  [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
-  [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
+MANDATORY
+- Before submitting, ensure the following variables are defined in your environment configuration:
+    API_BASE_URL   The API endpoint for the LLM.
+    MODEL_NAME     The model identifier to use for inference.
+    HF_TOKEN       Your Hugging Face / API key.
+
+- Defaults are set only for API_BASE_URL and MODEL_NAME:
+    API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+    MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+
+- The inference script must be named `inference.py` and placed in the root directory of the project
+- Participants must use OpenAI Client for all LLM calls using above variables
+
+STDOUT FORMAT
+- The script must emit exactly three line types to stdout, in this order:
+
+    [START] task=<task_name> env=<benchmark> model=<model_name>
+    [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
+    [END]   success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
+
+  Rules:
+    - One [START] line at episode begin.
+    - One [STEP] line per step, immediately after env.step() returns.
+    - One [END] line after episode ends, always emitted (even on exception).
+    - reward and rewards are formatted to 2 decimal places.
+    - done and success are lowercase booleans: true or false.
+    - error is the raw last_action_error string, or null if none.
+    - All fields on a single line with no newlines within a line.
+    - Each task should return score in [0, 1]
 
 Uses OpenAI client pointed at HuggingFace router.
 """
@@ -236,7 +260,7 @@ def run_task(env_client: EnvClient, llm_client: OpenAI, task_name: str, seed: in
     success = False
     final_score = 0.0
 
-    print(f"[START] task={task_name} env={BENCHMARK} model={MODEL_NAME}")
+    print(f"[START] task={task_name} env={BENCHMARK} model={MODEL_NAME}", flush=True)
 
     try:
         reset_result = env_client.reset(task_name, seed=seed)
@@ -294,7 +318,7 @@ def run_task(env_client: EnvClient, llm_client: OpenAI, task_name: str, seed: in
                 reward, done, error = 0.0, False, str(e)
 
             rewards.append(reward)
-            print(f"[STEP] step={step_num} action={action_str} reward={reward:.2f} done={'true' if done else 'false'} error={error or 'null'}")
+            print(f"[STEP] step={step_num} action={action_str} reward={reward:.2f} done={'true' if done else 'false'} error={error or 'null'}", flush=True)
 
             if done:
                 final_score = reward
@@ -306,12 +330,13 @@ def run_task(env_client: EnvClient, llm_client: OpenAI, task_name: str, seed: in
             final_score = rewards[-1] if rewards else 0.0
 
     except Exception as e:
-        print(f"[STEP] step={steps} action=error reward=0.00 done=true error={str(e)}")
+        print(f"[STEP] step={steps} action=error reward=0.00 done=true error={str(e)}", flush=True)
         rewards.append(0.0)
         final_score = 0.0
 
+    final_score = min(max(final_score, 0.0), 1.0)  # clamp to [0, 1]
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={'true' if success else 'false'} steps={steps} score={final_score:.2f} rewards={rewards_str}")
+    print(f"[END] success={'true' if success else 'false'} steps={steps} score={final_score:.3f} rewards={rewards_str}", flush=True)
     return final_score
 
 
